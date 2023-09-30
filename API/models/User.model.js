@@ -1,12 +1,12 @@
-const { Schema, model } = require("mongoose");
+const { model, default: mongoose } = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   email: String,
   username: String,
   password: String,
   gigs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
-  phone_number: String,
-  address: {},
+  phoneNumber: String,
+  address: String,
   profilePicture: String,
 });
 

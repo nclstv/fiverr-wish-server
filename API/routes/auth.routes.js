@@ -10,10 +10,10 @@ const saltRounds = 10;
 
 // POST /auth/signup
 router.post("/signup", (req, res, next) => {
-  const { email, password, username, phoneNumber, adress } = req.body;
+  const { email, password, username, phoneNumber, address } = req.body;
 
   // Check body format
-  if ((!email, !password, !username, !phoneNumber, !adress)) {
+  if ((!email, !password, !username, !phoneNumber, !address)) {
     res.status(400).json({ message: "Provide all fields" });
     return;
   }
@@ -59,13 +59,13 @@ router.post("/signup", (req, res, next) => {
         email,
         password: hashedPassword,
         username,
-        adress,
+        address,
         phoneNumber,
       });
     })
     .then((createdUser) => {
       if (!createdUser) return;
-      res.status(201);
+      res.status(201).json({ message: "User created" });
     })
     .catch((err) => next(err));
 });
