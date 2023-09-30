@@ -1,29 +1,14 @@
 const { Schema, model } = require("mongoose");
 
-// TODO: Please make sure you edit the User model to whatever makes sense in this case
-const userSchema = new Schema(
-  {
-    email: {
-      type: String,
-      required: [true, "Email is required."],
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required."],
-    },
-    name: {
-      type: String,
-      required: [true, "Name is required."],
-    },
-  },
-  {
-    // this second object adds extra properties: `createdAt` and `updatedAt`
-    timestamps: true,
-  }
-);
+const userSchema = new mongoose.Schema({
+  email: String,
+  username: String,
+  password: String,
+  gigs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
+  phone_number: String,
+  address: {},
+  profilePicture: String,
+});
 
 const User = model("User", userSchema);
 
