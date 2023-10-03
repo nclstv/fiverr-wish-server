@@ -13,15 +13,27 @@ router.post("/signup", (req, res, next) => {
   const { email, password, username, phoneNumber, address } = req.body;
 
   // Check body format
-  if ((!email, !password, !username, !phoneNumber, !address)) {
-    res.status(400).json({ message: "Provide all fields" });
+  if (!email || !password || !username || !phoneNumber || !address) {
+    res.status(400).json({ message: "Please provide all fields" });
     return;
   }
 
   // Check email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!emailRegex.test(email)) {
-    res.status(400).json({ message: "Provide a valid email address." });
+    res.status(400).json({
+      message: "Please provide a valid email address.",
+    });
+    return;
+  }
+
+  // Check username format
+  const ussernameRegex = /^[a-zA-Z0-9]{3,30}$/;
+  if (!ussernameRegex.test(username)) {
+    res.status(400).json({
+      message:
+        "The username must be between 3 and 30 characters and can only contain letters and numbers.",
+    });
     return;
   }
 
@@ -35,20 +47,11 @@ router.post("/signup", (req, res, next) => {
     return;
   }
 
-  // Check username format
-  const ussernameRegex = /^[a-zA-Z0-9]{3,15}$/;
-  if (!ussernameRegex.test(username)) {
-    res.status(400).json({
-      message: "Invalid Username format. Format need to be alphanumeric.",
-    });
-    return;
-  }
-
   // Check user already exist
-  User.findOne({ email })
+  User.findOne({ $or: [{ email }, { username }] })
     .then((foundUser) => {
       if (foundUser) {
-        res.status(400).json({ message: "User already exists." });
+        res.status(400).json({ message: "Username or email already exist." });
         return;
       }
 
@@ -76,7 +79,7 @@ router.post("/login", (req, res, next) => {
 
   // Check body format
   if (!email || !password) {
-    res.status(400).json({ message: "Provide email and password." });
+    res.status(400).json({ message: "Please provide email and password." });
     return;
   }
 
@@ -84,7 +87,10 @@ router.post("/login", (req, res, next) => {
   User.findOne({ email })
     .then((foundUser) => {
       if (!foundUser) {
-        res.status(401).json({ message: "User not found." });
+        res.status(401).json({
+          message:
+            "Sorry, the provided email address could not be found in our system. ",
+        });
         return;
       }
 
@@ -101,7 +107,9 @@ router.post("/login", (req, res, next) => {
 
         res.status(200).json({ authToken: authToken });
       } else {
-        res.status(401).json({ message: "Unable to authenticate the user" });
+        res
+          .status(401)
+          .json({ message: "Oops! The password you entered is incorrect. " });
       }
     })
     .catch((err) => next(err));

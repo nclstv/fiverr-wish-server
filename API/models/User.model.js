@@ -1,10 +1,10 @@
-const { model, default: mongoose } = require("mongoose");
+const { model, Schema } = require("mongoose");
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
   email: String,
   username: String,
   password: String,
-  gigs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
+  gigs: [{ type: Schema.Types.ObjectId, ref: "Service" }],
   phoneNumber: String,
   address: String,
   profilePicture: String,
