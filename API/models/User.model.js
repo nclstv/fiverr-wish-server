@@ -25,7 +25,7 @@ const userSchema = new Schema({
       ref: "Service",
     },
   ],
-  phone_number: {
+  phoneNumber: {
     type: String,
     maxLength: 15,
   },
