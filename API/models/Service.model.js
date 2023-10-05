@@ -16,6 +16,16 @@ const serviceSchema = new Schema({
     required: true,
     min: 0,
   },
+  ratings: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Rating",
+    },
+  ],
+  type: {
+    type: String,
+    required: true,
+  },
   rating: {
     type: Schema.Types.ObjectId,
     ref: "Rating",
