@@ -5,19 +5,18 @@ const Service = require("../models/Service.model");
 const Rating = require("../models/Rating.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 
-router.post("/services", async (req, res) => {
+router.post("/services", isAuthenticated, async (req, res) => {
   try {
     const user = req.payload;
-    const { title, description, image, type, estimatepriceperday, ownerId } =
-      req.body;
+    const { title, description, image, type, estimatePricePerDay } = req.body;
 
     const service = new Service({
       title,
       description,
       image,
       type,
-      estimatepriceperday,
-      owner: ownerId,
+      estimatePricePerDay,
+      owner: user._id,
     });
 
     await service.save();
