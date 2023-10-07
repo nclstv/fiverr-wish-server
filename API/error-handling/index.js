@@ -1,3 +1,5 @@
+const { default: mongoose } = require("mongoose");
+
 module.exports = (app) => {
   app.use((req, res, next) => {
     // this middleware runs whenever requested page is not available
@@ -5,15 +7,39 @@ module.exports = (app) => {
   });
 
   app.use((err, req, res, next) => {
-    // whenever you call next(err), this middleware will handle the error
-    // always logs the error
-    console.error("ERROR", req.method, req.path, err);
+    let { status, type, message } = err;
 
-    // only render if the error ocurred before sending the response
-    if (!res.headersSent) {
-      res.status(500).json({
-        message: "Internal server error. Check the server console",
+    // Handle internal server error
+    status = status || 500;
+    type = type || "INTERNAL_ERROR";
+    message = message || "Internal server error.";
+
+    // Handle invalid or expire token
+    if (err.code === "credentials_required") {
+      type = "UNAUTHORIZED";
+      message = "Invalid or expired token";
+    }
+
+    if (err instanceof mongoose.Error.ValidationError) {
+      status = 400;
+      type = "MONGOOSE_VALIDATION";
+      message = "Mongoose validation failed";
+
+      const errors = Object.keys(err.errors).map(
+        (key) => err.errors[key].message
+      );
+
+      return res.status(status).json({
+        type,
+        message,
+        status,
+        instance: req.path,
+        errors,
       });
     }
+
+    console.error("ERROR", req.method, req.path, err);
+
+    res.status(status).json({ type, message, status, instance: req.path });
   });
 };
