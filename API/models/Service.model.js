@@ -11,7 +11,7 @@ const serviceSchema = new Schema({
     maxLength: 2500,
   },
   image: String,
-  estimatepriceperday: {
+  estimatePricePerDay: {
     type: Number,
     required: true,
     min: 0,
