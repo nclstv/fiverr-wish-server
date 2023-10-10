@@ -13,6 +13,7 @@ const requestModel = new Schema(
     status: {
       type: String,
       default: "pending",
+      enum: ["authorized", "denied", "pending"],
     },
   },
   { timestamps: true }

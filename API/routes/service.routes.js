@@ -68,7 +68,7 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
       });
     }
 
-    // Check if user is accepted or owner
+    // TODO Check if user is accepted or owner
     if (true) {
       await service.populate({
         path: "owner",
