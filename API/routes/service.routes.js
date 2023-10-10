@@ -2,15 +2,17 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User.model");
 const Service = require("../models/Service.model");
-const Rating = require("../models/Rating.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 
-router.post("/services", isAuthenticated, async (req, res) => {
+// POST /api/services
+router.post("/services", isAuthenticated, async (req, res, next) => {
   try {
+    // Get user and body
     const user = req.payload;
     const { title, description, image, type, estimatePricePerDay } = req.body;
 
-    const service = new Service({
+    // Create a new service
+    const createdService = await Service.create({
       title,
       description,
       image,
@@ -19,156 +21,150 @@ router.post("/services", isAuthenticated, async (req, res) => {
       owner: user._id,
     });
 
-    await service.save();
+    // Push the created service in user services
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { $push: { services: createdService._id } },
+      { new: true }
+    );
 
-    res.status(201).json({ message: "Service created successfully", service });
+    // Response the created service
+    res.status(201).json(createdService);
   } catch (error) {
-    console.error("Error creating service:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while creating the service" });
+    next(error);
   }
 });
 
-router.get("/services", async (req, res) => {
+// GET /api/services
+router.get("/services", async (req, res, next) => {
   try {
-    const services = await Service.find();
+    // Get all services with owner informations
+    const services = await Service.find().populate({
+      path: "owner",
+      select: "username profilePicture",
+    });
+
+    // Response all services
     res.status(200).json(services);
   } catch (error) {
-    console.error("Error fetching services:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching services" });
+    next(error);
   }
 });
 
-router.get("/services/:id", async (req, res) => {
+// GET /api/services/:id
+router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
-    const serviceId = req.params.id;
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ error: "Service not found" });
-    }
-    res.status(200).json({ service });
-  } catch (error) {
-    console.error("Error fetching the service:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching the service" });
-  }
-});
-
-router.post("/services/:id", isAuthenticated, async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const { rating, comment } = req.body;
+    // Retrieve service information
     const user = req.payload;
+    const { serviceId } = req.params;
     const service = await Service.findById(serviceId);
 
+    // If no service found
     if (!service) {
-      return res.status(404).json({ error: "Service not found" });
+      return next({
+        message: "This service cannot be found.",
+        type: "NOT_FOUND",
+        status: 404,
+      });
     }
 
-    const newRating = new Rating({
-      rating,
-      comment,
-      user: user._id,
-      service: service._id,
-    });
+    // TODO Check if user is accepted or owner
+    if (true) {
+      await service.populate({
+        path: "owner",
+        select: "username profilePicture phoneNumber email",
+      });
+    } else {
+      await service.populate({
+        path: "owner",
+        select: "username profilePicture",
+      });
+    }
 
-    const newRatingSaved = await newRating.save();
-    const updatedService = await Service.findByIdAndUpdate(
-      serviceId,
-      {
-        $push: { ratings: newRatingSaved._id },
-      },
+    res.status(200).json(service);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/services/:id
+router.delete(
+  "/services/:serviceId",
+  isAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { serviceId } = req.params;
+      const user = req.payload;
+
+      const service = await Service.findById(serviceId);
+
+      // If no service found
+      if (!service) {
+        return next({
+          message: "This service cannot be found.",
+          type: "NOT_FOUND",
+          status: 404,
+        });
+      }
+
+      // If not owner
+      if (!service.owner.equals(user._id)) {
+        return next({
+          message: "Unable to delete. You are not the owner of this service.",
+          type: "FORBIDDEN",
+          status: 403,
+        });
+      }
+
+      // Delete the service
+      await Service.findByIdAndDelete(serviceId);
+
+      res.status(200).json({ message: "Service deleted successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT /api/services/:id
+router.put("/services/:serviceId", isAuthenticated, async (req, res, next) => {
+  try {
+    // Retrieve user, serviceId and body
+    const { serviceId } = req.params;
+    const user = req.payload;
+    const { title, description, image, estimatePricePerDay } = req.body;
+
+    const service = await Service.findById(serviceId);
+
+    console.log(service);
+
+    // If no service found
+    if (!service) {
+      return next({
+        message: "This service cannot be found.",
+        type: "NOT_FOUND",
+        status: 404,
+      });
+    }
+
+    // If not owner
+    if (!service.owner.equals(user._id)) {
+      return next({
+        message: "Unable to update. You are not the owner of this service.",
+        type: "FORBIDDEN",
+        status: 403,
+      });
+    }
+
+    const updatedService = await Service.findOneAndUpdate(
+      { _id: service._id },
+      { title, description, image, estimatePricePerDay },
       { new: true }
     );
-    res.status(201).json({
-      message: "Rating added successfully",
-      rating: newRating,
-      updatedService,
-    });
+
+    res.status(200).json(updatedService);
   } catch (error) {
-    console.error("Error adding rating:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while adding the rating" });
-  }
-});
-
-router.get("/services/pending", async (req, res) => {
-  try {
-    const servicesPending = await Service.find({
-      userpending: { $exists: true },
-    });
-
-    res.status(200).json(servicesPending);
-  } catch (error) {
-    console.error("Error fetching pending services:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching pending services" });
-  }
-});
-router.delete("/services/:id", async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const existingService = await Service.findById(serviceId);
-
-    if (!existingService) {
-      return res.status(404).json({ error: "Service not found" });
-    }
-    if (existingService.owner.toString() !== req.payload._id) {
-      return res
-        .status(403)
-        .json({ error: "You do not have permission to delete this service" });
-    }
-    await Service.findByIdAndDelete(serviceId);
-
-    res.status(200).json({ message: "Service deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting service:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while deleting the service" });
-  }
-});
-
-router.put("/services/:id", async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const { title, description, image, estimatepriceperday } = req.body;
-    const updatedService = await Service.findByIdAndUpdate(
-      serviceId,
-      {
-        title,
-        description,
-        image,
-        estimatepriceperday,
-      },
-      { new: true }
-    );
-
-    if (!updatedService) {
-      return res.status(404).json({ error: "Service not found" });
-    }
-
-    if (updatedService.owner.toString() !== req.payload._id) {
-      return res
-        .status(403)
-        .json({ error: "You do not have permission to edit this service" });
-    }
-
-    res.status(200).json({
-      message: "Service updated successfully",
-      service: updatedService,
-    });
-  } catch (error) {
-    console.error("Error updating service:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while updating the service" });
+    next(error);
   }
 });
 

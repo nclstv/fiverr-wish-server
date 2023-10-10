@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../../models/User.model");
-const bcrypt = require("bcryptjs");
-const { isAuthenticated } = require("./isAuthenticated");
+const User = require("../models/User.model");
+const bcrypt = require("bcrypt");
+const { isAuthenticated } = require("../middleware/jwt.middleware");
 
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
