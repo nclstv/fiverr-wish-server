@@ -5,7 +5,7 @@ const Service = require("../models/Service.model");
 
 const router = require("express").Router();
 
-router.post("/requests/:serviceId", isAuthenticated, async (req, res, next) => {
+router.get("/requests/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
     const user = req.payload;
     const { serviceId } = req.params;
