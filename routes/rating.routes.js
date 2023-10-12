@@ -44,3 +44,102 @@ router.post("/services/:serviceId", isAuthenticated, async (req, res) => {
       .json({ error: "An error occurred while adding the rating" });
   }
 });
+
+// PUT /services/:serviceId/ratings/:ratingId (Edit Rating)
+router.put(
+  "/services/:serviceId/ratings/:ratingId",
+  isAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { serviceId, ratingId } = req.params;
+      const { rating, comment } = req.body;
+      const user = req.payload;
+
+      const service = await Service.findById(serviceId);
+
+      if (!service) {
+        return res.status(404).json({
+          message: "This service cannot be found.",
+          type: "NOT_FOUND",
+        });
+      }
+
+      const existingRating = await Rating.findById(ratingId);
+
+      if (!existingRating) {
+        return res.status(404).json({
+          message: "Rating not found.",
+          type: "NOT_FOUND",
+        });
+      }
+
+      if (existingRating.user.toString() !== user._id.toString()) {
+        return res.status(403).json({
+          message: "You are not authorized to edit this rating.",
+          type: "FORBIDDEN",
+        });
+      }
+
+      existingRating.rating = rating;
+      existingRating.comment = comment;
+
+      const updatedRating = await existingRating.save();
+
+      res.status(200).json({
+        message: "Rating updated successfully",
+        rating: updatedRating,
+      });
+    } catch (error) {
+      console.error("Error editing rating:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while editing the rating" });
+    }
+  }
+);
+
+// DELETE /services/:serviceId/ratings/:ratingId (Delete Rating)
+router.delete(
+  "/services/:serviceId/ratings/:ratingId",
+  isAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { serviceId, ratingId } = req.params;
+      const user = req.payload;
+
+      const service = await Service.findById(serviceId);
+
+      if (!service) {
+        return res.status(404).json({
+          message: "This service cannot be found.",
+          type: "NOT_FOUND",
+        });
+      }
+
+      const existingRating = await Rating.findById(ratingId);
+
+      if (!existingRating) {
+        return res.status(404).json({
+          message: "Rating not found.",
+          type: "NOT_FOUND",
+        });
+      }
+
+      if (existingRating.user.toString() !== user._id.toString()) {
+        return res.status(403).json({
+          message: "You are not authorized to delete this rating.",
+          type: "FORBIDDEN",
+        });
+      }
+
+      await existingRating.remove();
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting rating:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while deleting the rating" });
+    }
+  }
+);
