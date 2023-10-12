@@ -3,13 +3,14 @@ const router = express.Router();
 const User = require("../models/User.model");
 const Service = require("../models/Service.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
+const fileUploader = require("../config/cloudinaray.config");
 
 // POST /api/services
 router.post("/services", isAuthenticated, async (req, res, next) => {
   try {
     // Get user and body
     const user = req.payload;
-    const { title, description, image, type, estimatePricePerDay } = req.body;
+    const { title, description, type, estimatePricePerDay, image } = req.body;
 
     // Create a new service
     const createdService = await Service.create({
@@ -33,6 +34,15 @@ router.post("/services", isAuthenticated, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// POST /api/upload
+router.post("/upload", fileUploader.single("image"), (req, res, next) => {
+  if (!req.file) {
+    next(new Error("No file uploaded!"));
+    return;
+  }
+  res.json({ fileUrl: req.file.path });
 });
 
 // GET /api/services

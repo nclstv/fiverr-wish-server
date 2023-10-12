@@ -19,9 +19,12 @@ const serviceSchema = new Schema(
     },
     type: {
       type: String,
-      required: [true, "Type is required"],
+      // required: [true, "Type is required"],
     },
-    image: String,
+    image: {
+      type: String,
+      required: [true, "Image is required"],
+    },
     estimatePricePerDay: {
       type: Number,
       required: [true, "Estimate price per day is required"],
