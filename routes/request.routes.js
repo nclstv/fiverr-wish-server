@@ -5,23 +5,6 @@ const Service = require("../models/Service.model");
 
 const router = require("express").Router();
 
-router.get("/requests/:serviceId", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.payload;
-    const { serviceId } = req.params;
-
-    // Create a request
-    const createdRequest = await Request.create({
-      requestUser: user._id,
-      service: serviceId,
-    });
-
-    res.status(201).json(createdRequest);
-  } catch (error) {
-    next(error);
-  }
-});
-
 router.get(
   "/requests/service/:serviceId",
   isAuthenticated,
@@ -73,6 +56,23 @@ router.get("/requests/user/", isAuthenticated, async (req, res, next) => {
     });
 
     res.status(200).json(requests);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/requests/:serviceId", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.payload;
+    const { serviceId } = req.params;
+
+    // Create a request
+    const createdRequest = await Request.create({
+      requestUser: user._id,
+      service: serviceId,
+    });
+
+    res.status(201).json(createdRequest);
   } catch (error) {
     next(error);
   }
@@ -152,6 +152,8 @@ router.put("/requests/:requestId", isAuthenticated, async (req, res, next) => {
     const user = req.payload;
     const { requestId } = req.params;
     const { status } = req.body;
+
+    console.log("requestId");
 
     if (!status) {
       return next({

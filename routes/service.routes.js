@@ -98,7 +98,7 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
       });
     }
 
-    const foundRequest = Request.findOne({
+    const foundRequest = await Request.findOne({
       $and: [{ service: service._id }, { requestUser: user._id }],
     });
 
@@ -117,7 +117,7 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
       });
     }
 
-    res.status(200).json(service);
+    res.status(200).json({ service, request: foundRequest });
   } catch (error) {
     next(error);
   }
