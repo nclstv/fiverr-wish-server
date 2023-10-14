@@ -17,7 +17,6 @@ require("./config")(app);
 // 👇 Start handling routes here
 const indexRoutes = require("./routes/index.routes");
 app.use("/api", indexRoutes);
-
 const authRoutes = require("./routes/auth.routes");
 app.use("/auth", authRoutes);
 const servicesRoutes = require("./routes/service.routes");
@@ -26,6 +25,8 @@ const profileRoutes = require("./routes/profile.routes");
 app.use("/api", profileRoutes);
 const requestRoutes = require("./routes/request.routes");
 app.use("/api", requestRoutes);
+const ratingsRoutes = require("./routes/rating.routes");
+app.use("/api", ratingsRoutes);
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
 require("./error-handling")(app);
