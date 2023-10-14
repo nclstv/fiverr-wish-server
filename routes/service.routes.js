@@ -4,6 +4,7 @@ const User = require("../models/User.model");
 const Service = require("../models/Service.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const fileUploader = require("../config/cloudinaray.config");
+const Request = require("../models/Request.model");
 
 // POST /api/services
 router.post("/services", isAuthenticated, async (req, res, next) => {
@@ -61,6 +62,25 @@ router.get("/services", async (req, res, next) => {
   }
 });
 
+router.get("/services/me", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.payload;
+    const servicies = await Service.find({ owner: user._id });
+
+    if (!servicies) {
+      return next({
+        message: "No servicies.",
+        type: "NOT_FOUND",
+        status: 404,
+      });
+    }
+
+    res.status(200).json(servicies);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/services/:id
 router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
@@ -78,8 +98,14 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
       });
     }
 
-    // TODO Check if user is accepted or owner
-    if (true) {
+    const foundRequest = await Request.findOne({
+      $and: [{ service: service._id }, { requestUser: user._id }],
+    });
+
+    if (
+      (foundRequest && foundRequest.status === "accepted") ||
+      service.owner.equals(user._id)
+    ) {
       await service.populate({
         path: "owner",
         select: "username profilePicture phoneNumber email",
@@ -91,7 +117,7 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
       });
     }
 
-    res.status(200).json(service);
+    res.status(200).json({ service, request: foundRequest });
   } catch (error) {
     next(error);
   }

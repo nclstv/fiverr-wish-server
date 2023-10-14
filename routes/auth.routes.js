@@ -10,10 +10,18 @@ const saltRounds = 10;
 
 // POST /auth/signup
 router.post("/signup", (req, res, next) => {
-  const { email, password, username, phoneNumber, address } = req.body;
+  const { email, password, username, phoneNumber, address, profilePicture } =
+    req.body;
 
   // Check body format
-  if (!email || !password || !username || !phoneNumber || !address) {
+  if (
+    !email ||
+    !password ||
+    !username ||
+    !phoneNumber ||
+    !address ||
+    !profilePicture
+  ) {
     res.status(400).json({ message: "Please provide all fields" });
     return;
   }
@@ -23,16 +31,6 @@ router.post("/signup", (req, res, next) => {
   if (!emailRegex.test(email)) {
     res.status(400).json({
       message: "Please provide a valid email address.",
-    });
-    return;
-  }
-
-  // Check username format
-  const ussernameRegex = /^[a-zA-Z0-9]{3,30}$/;
-  if (!ussernameRegex.test(username)) {
-    res.status(400).json({
-      message:
-        "The username must be between 3 and 30 characters and can only contain letters and numbers.",
     });
     return;
   }
@@ -64,11 +62,29 @@ router.post("/signup", (req, res, next) => {
         username,
         address,
         phoneNumber,
+        profilePicture,
       });
     })
     .then((createdUser) => {
       if (!createdUser) return;
-      res.status(201).json({ message: "User created" });
+
+      const { _id, email, username, profilePicture, address, phoneNumber } =
+        createdUser;
+      const payload = {
+        _id,
+        email,
+        username,
+        profilePicture,
+        address,
+        phoneNumber,
+      };
+
+      const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
+        algorithm: "HS256",
+        expiresIn: "6h",
+      });
+
+      res.status(201).json({ authToken: authToken });
     })
     .catch((err) => next(err));
 });
@@ -97,8 +113,16 @@ router.post("/login", (req, res, next) => {
       const passwordCorrect = bcrypt.compareSync(password, foundUser.password);
 
       if (passwordCorrect) {
-        const { _id, email, username } = foundUser;
-        const payload = { _id, email, username };
+        const { _id, email, username, profilePicture, address, phoneNumber } =
+          foundUser;
+        const payload = {
+          _id,
+          email,
+          username,
+          profilePicture,
+          address,
+          phoneNumber,
+        };
 
         const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
           algorithm: "HS256",

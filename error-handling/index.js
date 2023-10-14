@@ -9,6 +9,8 @@ module.exports = (app) => {
   app.use((err, req, res, next) => {
     let { status, type, message } = err;
 
+    // console.log(err);
+
     // Handle internal server error
     status = status || 500;
     type = type || "INTERNAL_ERROR";
