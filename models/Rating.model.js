@@ -4,13 +4,13 @@ const ratingSchema = new Schema(
   {
     rating: {
       type: Number,
-      required: true,
-      min: 1,
+      required: [true, "Please provide a rating."],
+      min: [1, "Please provide a minimum rating of 1."],
       max: 5,
     },
     comment: {
       type: String,
-      maxLength: 500,
+      maxLength: [500, "Your comment need to be less than 500 characters."],
     },
     user: {
       type: Schema.Types.ObjectId,
