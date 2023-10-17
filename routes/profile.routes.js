@@ -19,49 +19,51 @@ router.get("/profile", isAuthenticated, async (req, res) => {
     res.status(500).json({ errorMessage: "Internal server error" });
   }
 });
-
-router.get("/profile/edit/email", isAuthenticated, async (req, res) => {
+router.put("/profile/edit", isAuthenticated, async (req, res) => {
   try {
     const { payload } = req;
-    const user = await User.findOne({ _id: payload.sub });
+    const { email, username, phoneNumber } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ errorMessage: "User not found" });
-    }
-
-    res.json({ user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
-  }
-});
-
-router.post("/profile/edit/email", isAuthenticated, async (req, res) => {
-  try {
-    const { payload } = req;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ errorMessage: "Email field is required." });
-    }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    const emailTest = emailPattern.test(email);
-    if (!emailTest) {
+    if (!email && !username && !phoneNumber) {
       return res.status(400).json({
-        errorMessage: "Invalid email format. Please provide a valid email.",
+        errorMessage:
+          "At least one field (email, username, or phoneNumber) is required for update.",
       });
     }
 
-    const user = await User.findOne({ email });
-    if (user) {
+    if (email) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      const emailTest = emailPattern.test(email);
+      if (!emailTest) {
+        return res.status(400).json({
+          errorMessage: "Invalid email format. Please provide a valid email.",
+        });
+      }
+
+      const userWithSameEmail = await User.findOne({ email });
+      if (
+        userWithSameEmail &&
+        userWithSameEmail._id.toString() !== payload.sub
+      ) {
+        return res.status(400).json({
+          errorMessage: "Email is already in use. Please use a different one.",
+        });
+      }
+    }
+
+    if (phoneNumber && phoneNumber.length > 15) {
       return res.status(400).json({
-        errorMessage: "Email is already in use. Please use a different one.",
+        errorMessage: "Phone number should not exceed 15 characters.",
       });
     }
 
-    await User.updateOne({ _id: payload.sub }, { email });
-    res.status(200).json({ message: "Email updated successfully" });
+    const updateFields = {};
+    if (email) updateFields.email = email;
+    if (username) updateFields.username = username;
+    if (phoneNumber) updateFields.phoneNumber = phoneNumber;
+
+    await User.updateOne({ _id: payload.sub }, updateFields);
+    res.status(200).json({ message: "Profile updated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ errorMessage: "Internal server error" });
