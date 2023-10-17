@@ -87,7 +87,14 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     // Retrieve service information
     const user = req.payload;
     const { serviceId } = req.params;
-    const service = await Service.findById(serviceId);
+    const service = await Service.findById(serviceId).populate({
+      path: "ratings",
+      options: { sort: { createdAt: -1 } },
+      populate: {
+        path: "user",
+        select: "profilePicture username",
+      },
+    });
 
     // If no service found
     if (!service) {

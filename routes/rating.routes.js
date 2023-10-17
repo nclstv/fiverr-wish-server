@@ -1,5 +1,11 @@
-// POST /services/:id (rating)
-router.post("/services/:serviceId", isAuthenticated, async (req, res) => {
+const { isAuthenticated } = require("../middleware/jwt.middleware");
+const Rating = require("../models/Rating.model");
+const Service = require("../models/Service.model");
+
+const router = require("express").Router();
+
+// POST /rating/:id
+router.post("/ratings/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
     // Retrieve service, rating, user information
     const { serviceId } = req.params;
@@ -38,10 +44,7 @@ router.post("/services/:serviceId", isAuthenticated, async (req, res) => {
       updatedService,
     });
   } catch (error) {
-    console.error("Error adding rating:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while adding the rating" });
+    next(error);
   }
 });
 
@@ -143,3 +146,5 @@ router.delete(
     }
   }
 );
+
+module.exports = router;
