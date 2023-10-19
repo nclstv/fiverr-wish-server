@@ -102,49 +102,49 @@ router.put(
 );
 
 // DELETE /services/:serviceId/ratings/:ratingId (Delete Rating)
-router.delete(
-  "/services/:serviceId/ratings/:ratingId",
-  isAuthenticated,
-  async (req, res, next) => {
-    try {
-      const { serviceId, ratingId } = req.params;
-      const user = req.payload;
+router.delete("/ratings/:ratingId", isAuthenticated, async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+    const user = req.payload;
 
-      const service = await Service.findById(serviceId);
+    console.log(ratingId);
 
-      if (!service) {
-        return res.status(404).json({
-          message: "This service cannot be found.",
-          type: "NOT_FOUND",
-        });
-      }
+    const existingRating = await Rating.findById(ratingId);
 
-      const existingRating = await Rating.findById(ratingId);
-
-      if (!existingRating) {
-        return res.status(404).json({
-          message: "Rating not found.",
-          type: "NOT_FOUND",
-        });
-      }
-
-      if (existingRating.user.toString() !== user._id.toString()) {
-        return res.status(403).json({
-          message: "You are not authorized to delete this rating.",
-          type: "FORBIDDEN",
-        });
-      }
-
-      await existingRating.remove();
-
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting rating:", error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while deleting the rating" });
+    if (!existingRating) {
+      return res.status(404).json({
+        message: "Rating not found.",
+        type: "NOT_FOUND",
+      });
     }
+
+    if (existingRating.user.toString() !== user._id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to delete this rating.",
+        type: "FORBIDDEN",
+      });
+    }
+
+    await Rating.findByIdAndDelete(ratingId);
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-);
+});
+
+router.get("/ratings/me", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.payload;
+
+    const ratings = await Rating.find({ user: user._id })
+      .sort({ createdAt: -1 })
+      .populate("service");
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
