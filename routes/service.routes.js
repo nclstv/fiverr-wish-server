@@ -202,7 +202,7 @@ router.put("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     const updatedService = await Service.findOneAndUpdate(
       { _id: service._id },
       { title, description, image, estimatePricePerDay },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     res.status(200).json(updatedService);

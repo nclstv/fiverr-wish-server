@@ -23,7 +23,6 @@ const userSchema = new Schema({
   ],
   phoneNumber: {
     type: String,
-    maxLength: 15,
   },
   address: {},
   profilePicture: String,
