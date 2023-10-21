@@ -5,6 +5,7 @@ const Service = require("../models/Service.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const fileUploader = require("../config/cloudinaray.config");
 const Request = require("../models/Request.model");
+const Rating = require("../models/Rating.model");
 
 // POST /api/services
 router.post("/services", isAuthenticated, async (req, res, next) => {
@@ -161,6 +162,10 @@ router.delete(
 
       // Delete the service
       await Service.findByIdAndDelete(serviceId);
+
+      await Request.deleteMany({ service: serviceId });
+
+      await Rating.deleteMany({ service: serviceId });
 
       res.status(200).json({ message: "Service deleted successfully" });
     } catch (error) {
