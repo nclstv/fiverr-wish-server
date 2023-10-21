@@ -10,8 +10,15 @@ const saltRounds = 10;
 
 // POST /auth/signup
 router.post("/signup", (req, res, next) => {
-  const { email, password, username, phoneNumber, address, profilePicture } =
-    req.body;
+  const {
+    email,
+    password,
+    username,
+    phoneNumber,
+    address,
+    profilePicture,
+    city,
+  } = req.body;
 
   // Check body format
   if (
@@ -20,7 +27,8 @@ router.post("/signup", (req, res, next) => {
     !username ||
     !phoneNumber ||
     !address ||
-    !profilePicture
+    !profilePicture ||
+    !city
   ) {
     res.status(400).json({ message: "Please provide all fields" });
     return;
@@ -63,6 +71,7 @@ router.post("/signup", (req, res, next) => {
         address,
         phoneNumber,
         profilePicture,
+        city,
       });
     })
     .then((createdUser) => {
