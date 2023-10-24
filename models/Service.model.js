@@ -36,6 +36,10 @@ const serviceSchema = new Schema(
         ref: "Rating",
       },
     ],
+    request: {
+      type: Schema.Types.ObjectId,
+      ref: "Request",
+    },
   },
   { timestamps: true }
 );

@@ -7,19 +7,30 @@ const router = require("express").Router();
 // POST /rating/:id
 router.post("/ratings/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
-    // Retrieve service, rating, user information
     const { serviceId } = req.params;
     const { rating, comment } = req.body;
     const user = req.payload;
 
     const service = await Service.findById(serviceId);
 
-    // If no service found
     if (!service) {
-      next({
+      return res.status(404).json({
         message: "This service cannot be found.",
         type: "NOT_FOUND",
-        status: 404,
+      });
+    }
+
+    const acceptedRequest = await Request.findOne({
+      service: serviceId,
+      requestUser: user._id,
+      status: "authorized",
+    });
+
+    if (!acceptedRequest) {
+      return res.status(403).json({
+        message:
+          "You can only rate a service for which you have an accepted request.",
+        type: "FORBIDDEN",
       });
     }
 
