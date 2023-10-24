@@ -51,10 +51,12 @@ router.post("/upload", fileUploader.single("image"), (req, res, next) => {
 router.get("/services", async (req, res, next) => {
   try {
     // Get all services with owner informations
-    const services = await Service.find().populate({
-      path: "owner",
-      select: "username profilePicture",
-    });
+    const services = await Service.find()
+      .populate({
+        path: "owner",
+        select: "username profilePicture",
+      })
+      .populate("ratings");
 
     // Response all services
     res.status(200).json(services);
@@ -116,12 +118,12 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     ) {
       await service.populate({
         path: "owner",
-        select: "username profilePicture phoneNumber email",
+        select: "username profilePicture phoneNumber email city createdAt",
       });
     } else {
       await service.populate({
         path: "owner",
-        select: "username profilePicture",
+        select: "username profilePicture city createdAt",
       });
     }
 

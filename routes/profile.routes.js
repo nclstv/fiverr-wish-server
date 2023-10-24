@@ -6,71 +6,47 @@ const { isAuthenticated } = require("../middleware/jwt.middleware");
 
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
-    const { payload } = req;
-    const user = await User.findOne({ _id: payload.sub });
+    const user = req.payload;
+    const userFound = await User.findOne({ _id: user._id });
 
-    if (!user) {
+    if (!userFound) {
       return res.status(404).json({ errorMessage: "User not found" });
     }
 
-    res.json({ user });
+    const { username, phoneNumber, email } = userFound;
+    const response = { username, phoneNumber, email };
+
+    res.json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
+    next(error);
   }
 });
+
 router.put("/profile/edit", isAuthenticated, async (req, res) => {
   try {
-    const { payload } = req;
+    const user = req.payload;
     const { email, username, phoneNumber } = req.body;
 
-    if (!email && !username && !phoneNumber) {
-      return res.status(400).json({
-        errorMessage:
-          "At least one field (email, username, or phoneNumber) is required for update.",
-      });
-    }
+    const updateFields = { email, username, phoneNumber };
 
-    if (email) {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-      const emailTest = emailPattern.test(email);
-      if (!emailTest) {
-        return res.status(400).json({
-          errorMessage: "Invalid email format. Please provide a valid email.",
-        });
-      }
+    const updatedUser = await User.findByIdAndUpdate(user._id, updateFields, {
+      new: true,
+      runValidators: true,
+    });
 
-      const userWithSameEmail = await User.findOne({ email });
-      if (
-        userWithSameEmail &&
-        userWithSameEmail._id.toString() !== payload.sub
-      ) {
-        return res.status(400).json({
-          errorMessage: "Email is already in use. Please use a different one.",
-        });
-      }
-    }
+    const response = {
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phoneNumber: updatedUser.phoneNumber,
+    };
 
-    if (phoneNumber && phoneNumber.length > 15) {
-      return res.status(400).json({
-        errorMessage: "Phone number should not exceed 15 characters.",
-      });
-    }
-
-    const updateFields = {};
-    if (email) updateFields.email = email;
-    if (username) updateFields.username = username;
-    if (phoneNumber) updateFields.phoneNumber = phoneNumber;
-
-    await User.updateOne({ _id: payload.sub }, updateFields);
-    res.status(200).json({ message: "Profile updated successfully" });
+    res.status(200).json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
+    next(error);
   }
 });
 
-router.post("/profile/edit/password", isAuthenticated, async (req, res) => {
+router.put("/profile/edit/password", isAuthenticated, async (req, res) => {
   const { payload } = req;
   const { oldPassword, newPassword } = req.body;
 
