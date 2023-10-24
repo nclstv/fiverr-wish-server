@@ -179,7 +179,7 @@ router.put("/requests/:requestId", isAuthenticated, async (req, res, next) => {
     // If not owner
     if (!foundRequest.service.owner.equals(user._id)) {
       return next({
-        message: "Unable to delete. You are not the owner of this request.",
+        message: "Unable to update. You are not the owner of this request.",
         type: "FORBIDDEN",
         status: 403,
       });

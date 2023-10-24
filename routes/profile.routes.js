@@ -6,69 +6,47 @@ const { isAuthenticated } = require("../middleware/jwt.middleware");
 
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
-    const { payload } = req;
-    const user = await User.findOne({ _id: payload.sub });
+    const user = req.payload;
+    const userFound = await User.findOne({ _id: user._id });
 
-    if (!user) {
+    if (!userFound) {
       return res.status(404).json({ errorMessage: "User not found" });
     }
 
-    res.json({ user });
+    const { username, phoneNumber, email } = userFound;
+    const response = { username, phoneNumber, email };
+
+    res.json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
+    next(error);
   }
 });
 
-router.get("/profile/edit/email", isAuthenticated, async (req, res) => {
+router.put("/profile/edit", isAuthenticated, async (req, res) => {
   try {
-    const { payload } = req;
-    const user = await User.findOne({ _id: payload.sub });
+    const user = req.payload;
+    const { email, username, phoneNumber } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ errorMessage: "User not found" });
-    }
+    const updateFields = { email, username, phoneNumber };
 
-    res.json({ user });
+    const updatedUser = await User.findByIdAndUpdate(user._id, updateFields, {
+      new: true,
+      runValidators: true,
+    });
+
+    const response = {
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phoneNumber: updatedUser.phoneNumber,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
+    next(error);
   }
 });
 
-router.post("/profile/edit/email", isAuthenticated, async (req, res) => {
-  try {
-    const { payload } = req;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ errorMessage: "Email field is required." });
-    }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    const emailTest = emailPattern.test(email);
-    if (!emailTest) {
-      return res.status(400).json({
-        errorMessage: "Invalid email format. Please provide a valid email.",
-      });
-    }
-
-    const user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({
-        errorMessage: "Email is already in use. Please use a different one.",
-      });
-    }
-
-    await User.updateOne({ _id: payload.sub }, { email });
-    res.status(200).json({ message: "Email updated successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ errorMessage: "Internal server error" });
-  }
-});
-
-router.post("/profile/edit/password", isAuthenticated, async (req, res) => {
+router.put("/profile/edit/password", isAuthenticated, async (req, res) => {
   const { payload } = req;
   const { oldPassword, newPassword } = req.body;
 

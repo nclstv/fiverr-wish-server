@@ -5,6 +5,7 @@ const Service = require("../models/Service.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const fileUploader = require("../config/cloudinaray.config");
 const Request = require("../models/Request.model");
+const Rating = require("../models/Rating.model");
 
 // POST /api/services
 router.post("/services", isAuthenticated, async (req, res, next) => {
@@ -50,10 +51,12 @@ router.post("/upload", fileUploader.single("image"), (req, res, next) => {
 router.get("/services", async (req, res, next) => {
   try {
     // Get all services with owner informations
-    const services = await Service.find().populate({
-      path: "owner",
-      select: "username profilePicture",
-    });
+    const services = await Service.find()
+      .populate({
+        path: "owner",
+        select: "username profilePicture",
+      })
+      .populate("ratings");
 
     // Response all services
     res.status(200).json(services);
@@ -87,7 +90,14 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     // Retrieve service information
     const user = req.payload;
     const { serviceId } = req.params;
-    const service = await Service.findById(serviceId);
+    const service = await Service.findById(serviceId).populate({
+      path: "ratings",
+      options: { sort: { createdAt: -1 } },
+      populate: {
+        path: "user",
+        select: "profilePicture username",
+      },
+    });
 
     // If no service found
     if (!service) {
@@ -108,12 +118,12 @@ router.get("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     ) {
       await service.populate({
         path: "owner",
-        select: "username profilePicture phoneNumber email",
+        select: "username profilePicture phoneNumber email city createdAt",
       });
     } else {
       await service.populate({
         path: "owner",
-        select: "username profilePicture",
+        select: "username profilePicture city createdAt",
       });
     }
 
@@ -155,6 +165,10 @@ router.delete(
       // Delete the service
       await Service.findByIdAndDelete(serviceId);
 
+      await Request.deleteMany({ service: serviceId });
+
+      await Rating.deleteMany({ service: serviceId });
+
       res.status(200).json({ message: "Service deleted successfully" });
     } catch (error) {
       next(error);
@@ -195,7 +209,7 @@ router.put("/services/:serviceId", isAuthenticated, async (req, res, next) => {
     const updatedService = await Service.findOneAndUpdate(
       { _id: service._id },
       { title, description, image, estimatePricePerDay },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     res.status(200).json(updatedService);

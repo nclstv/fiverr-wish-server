@@ -1,19 +1,43 @@
-// POST /services/:id (rating)
-router.post("/services/:serviceId", isAuthenticated, async (req, res) => {
+const { isAuthenticated } = require("../middleware/jwt.middleware");
+const Rating = require("../models/Rating.model");
+const Service = require("../models/Service.model");
+const Request = require("../models/Request.model");
+
+const router = require("express").Router();
+
+// POST /rating/:id
+router.post("/ratings/:serviceId", isAuthenticated, async (req, res, next) => {
   try {
-    // Retrieve service, rating, user information
     const { serviceId } = req.params;
     const { rating, comment } = req.body;
     const user = req.payload;
 
     const service = await Service.findById(serviceId);
 
-    // If no service found
     if (!service) {
-      next({
+      return res.status(404).json({
         message: "This service cannot be found.",
         type: "NOT_FOUND",
-        status: 404,
+      });
+    }
+
+    const acceptedRequest = await Request.findOne({
+      service: serviceId,
+      requestUser: user._id,
+      status: "accepted",
+    });
+
+    if (service.owner.equals(user._id)) {
+      return res.status(403).json({
+        message: "You can't rate a service you owned.",
+      });
+    }
+
+    if (!acceptedRequest) {
+      return res.status(403).json({
+        message:
+          "You can only rate a service for which you have an accepted request.",
+        type: "FORBIDDEN",
       });
     }
 
@@ -38,10 +62,7 @@ router.post("/services/:serviceId", isAuthenticated, async (req, res) => {
       updatedService,
     });
   } catch (error) {
-    console.error("Error adding rating:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while adding the rating" });
+    next(error);
   }
 });
 
@@ -99,47 +120,49 @@ router.put(
 );
 
 // DELETE /services/:serviceId/ratings/:ratingId (Delete Rating)
-router.delete(
-  "/services/:serviceId/ratings/:ratingId",
-  isAuthenticated,
-  async (req, res, next) => {
-    try {
-      const { serviceId, ratingId } = req.params;
-      const user = req.payload;
+router.delete("/ratings/:ratingId", isAuthenticated, async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+    const user = req.payload;
 
-      const service = await Service.findById(serviceId);
+    console.log(ratingId);
 
-      if (!service) {
-        return res.status(404).json({
-          message: "This service cannot be found.",
-          type: "NOT_FOUND",
-        });
-      }
+    const existingRating = await Rating.findById(ratingId);
 
-      const existingRating = await Rating.findById(ratingId);
-
-      if (!existingRating) {
-        return res.status(404).json({
-          message: "Rating not found.",
-          type: "NOT_FOUND",
-        });
-      }
-
-      if (existingRating.user.toString() !== user._id.toString()) {
-        return res.status(403).json({
-          message: "You are not authorized to delete this rating.",
-          type: "FORBIDDEN",
-        });
-      }
-
-      await existingRating.remove();
-
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting rating:", error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while deleting the rating" });
+    if (!existingRating) {
+      return res.status(404).json({
+        message: "Rating not found.",
+        type: "NOT_FOUND",
+      });
     }
+
+    if (existingRating.user.toString() !== user._id.toString()) {
+      return res.status(403).json({
+        message: "You are not authorized to delete this rating.",
+        type: "FORBIDDEN",
+      });
+    }
+
+    await Rating.findByIdAndDelete(ratingId);
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-);
+});
+
+router.get("/ratings/me", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.payload;
+
+    const ratings = await Rating.find({ user: user._id })
+      .sort({ createdAt: -1 })
+      .populate("service");
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
