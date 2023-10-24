@@ -1,6 +1,7 @@
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const Rating = require("../models/Rating.model");
 const Service = require("../models/Service.model");
+const Request = require("../models/Request.model");
 
 const router = require("express").Router();
 
@@ -23,8 +24,14 @@ router.post("/ratings/:serviceId", isAuthenticated, async (req, res, next) => {
     const acceptedRequest = await Request.findOne({
       service: serviceId,
       requestUser: user._id,
-      status: "authorized",
+      status: "accepted",
     });
+
+    if (service.owner.equals(user._id)) {
+      return res.status(403).json({
+        message: "You can't rate a service you owned.",
+      });
+    }
 
     if (!acceptedRequest) {
       return res.status(403).json({

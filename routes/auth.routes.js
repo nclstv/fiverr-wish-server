@@ -154,6 +154,14 @@ router.get("/verify", isAuthenticated, async (req, res, next) => {
 
   const foundedUser = await User.findById(user._id);
 
+  if (!foundedUser) {
+    return next({
+      message: "User can't be found",
+      type: "NOT_FOUND",
+      status: 404,
+    });
+  }
+
   const { _id, email, username, profilePicture, address, phoneNumber } =
     foundedUser;
 
