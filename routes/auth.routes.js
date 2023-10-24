@@ -149,8 +149,22 @@ router.post("/login", (req, res, next) => {
 });
 
 // GET  /auth/verify
-router.get("/verify", isAuthenticated, (req, res, next) => {
-  res.status(200).json(req.payload);
+router.get("/verify", isAuthenticated, async (req, res, next) => {
+  const user = req.payload;
+
+  const foundedUser = await User.findById(user._id);
+
+  const { _id, email, username, profilePicture, address, phoneNumber } =
+    foundedUser;
+
+  res.status(200).json({
+    _id,
+    email,
+    username,
+    profilePicture,
+    address,
+    phoneNumber,
+  });
 });
 
 module.exports = router;
